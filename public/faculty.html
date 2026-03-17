@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard | Attendance System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #10B981;
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --present: #10b981;
+            --absent: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.1), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.1), transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        nav {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        @media (max-width: 600px) {
+            nav {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Controls Section */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .control-group select, 
+        .control-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .control-group select:focus, 
+        .control-group input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Students List */
+        .students-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .student-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--glass-border);
+        }
+
+        .student-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .student-info p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Toggle Button */
+        .attendance-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 0.25rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn.present.active {
+            background: var(--present);
+            color: white;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .toggle-btn.absent.active {
+            background: var(--absent);
+            color: white;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Action Buttons */
+        .actions {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+        }
+        
+        #loadingMsg, #errorMsg, #successMsg {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        #errorMsg { background: rgba(239, 68, 68, 0.1); color: var(--absent); border: 1px solid rgba(239, 68, 68, 0.3); }
+        #successMsg { background: rgba(16, 185, 129, 0.1); color: var(--present); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        @media (max-width: 768px) {
+            .glass-panel {
+                padding: 1.5rem;
+            }
+            .students-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .actions {
+                justify-content: stretch;
+            }
+            .btn-primary {
+                width: 100%;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-brand">Faculty Portal</div>
+        <div class="nav-user">
+            <span id="userName">Welcome, Faculty</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="glass-panel">
+            <div id="loadingMsg">Loading...</div>
+            <div id="errorMsg"></div>
+            <div id="successMsg"></div>
+            
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label>Select Subject</label>
+                    <select id="subjectSelect" onchange="loadStudents()">
+                        <option value="">Select a subject...</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Date</label>
+                    <input type="date" id="dateSelect" onchange="checkExistingAttendance()">
+                </div>
+                <div class="control-group">
+                    <label>Period</label>
+                    <select id="periodSelect" onchange="checkExistingAttendance()">
+                        <option value="1">Period 1 (9:00 AM)</option>
+                        <option value="2">Period 2 (10:00 AM)</option>
+                        <option value="3">Period 3 (11:00 AM)</option>
+                        <option value="4">Period 4 (1:00 PM)</option>
+                        <option value="5">Period 5 (2:00 PM)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="students-header">
+                <h2>Student Roster</h2>
+                <div>
+                    <button class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="markAll('present')">Mark All Present</button>
+                </div>
+            </div>
+
+            <div id="studentsList">
+                <!-- Student items will be injected here -->
+                <p style="text-align: center; color: var(--text-muted); padding: 2rem;">Please select a subject to load students.</p>
+            </div>
+
+            <div class="actions">
+                <button class="btn-primary" onclick="submitAttendance()" id="submitBtn" style="display: none;">Save Attendance</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication Check
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user || user.role !== 'faculty') {
+            window.location.href = '/login.html';
+        }
+
+        document.getElementById('userName').textContent = `Welcome, ${user.name}`;
+        
+        // Set today's date as default
+        document.getElementById('dateSelect').valueAsDate = new Date();
+
+        // State
+        let currentStudents = [];
+        let attendanceState = {}; // student_id -> 'present' | 'absent'
+
+        // Initialize
+        async function init() {
+            try {
+                const res = await fetch('/api/faculty/subjects', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const subjects = await res.json();
+                
+                const select = document.getElementById('subjectSelect');
+                subjects.forEach(sub => {
+                    const opt = document.createElement('option');
+                    opt.value = sub.id;
+                    opt.textContent = sub.name;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                showError('Failed to load subjects');
+            }
+        }
+
+        async function loadStudents() {
+            const subjectId = document.getElementById('subjectSelect').value;
+            const studentsList = document.getElementById('studentsList');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (!subjectId) {
+                studentsList.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">Please select a subject to load students.</p>';
+                submitBtn.style.display = 'none';
+                return;
+            }
+
+            studentsList.innerHTML = '<p style="text-align: center;">Loading students...</p>';
+
+            try {
+                const res = await fetch(`/api/faculty/students/${subjectId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                currentStudents = await res.json();
+                
+                // Initialize default state to present
+                currentStudents.forEach(s => attendanceState[s.id] = 'present');
+                
+                // Check if attendance already exists for this date/period
+                await checkExistingAttendance();
+                renderStudents();
+                submitBtn.style.display = 'block';
+            } catch (err) {
+                showError('Failed to load students');
+                studentsList.innerHTML = '';
+            }
+        }
+
+        async function checkExistingAttendance() {
+            const subjectId = document.getElementById('subjectSelect').value;
+            const date = document.getElementById('dateSelect').value;
+            const period = document.getElementById('periodSelect').value;
+
+            if (!subjectId || !date || !period || currentStudents.length === 0) return;
+
+            try {
+                const res = await fetch(`/api/faculty/attendance/date?subject_id=${subjectId}&date=${date}&period=${period}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const existing = await res.json();
+                
+                if (existing && existing.length > 0) {
+                    // Update state with existing records
+                    existing.forEach(record => {
+                        attendanceState[record.student_id] = record.status;
+                    });
+                    showSuccess('Loaded existing attendance for this date/period');
+                } else {
+                    // Reset to present if no existing record
+                    currentStudents.forEach(s => attendanceState[s.id] = 'present');
+                    document.getElementById('successMsg').style.display = 'none';
+                }
+                renderStudents();
+            } catch (err) {
+                console.error('Error checking attendance', err);
+            }
+        }
+
+        function renderStudents() {
+            const container = document.getElementById('studentsList');
+            container.innerHTML = '';
+
+            if (currentStudents.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No students enrolled.</p>';
+                return;
+            }
+
+            currentStudents.forEach(student => {
+                const status = attendanceState[student.id];
+                const div = document.createElement('div');
+                div.className = 'student-item';
+                div.innerHTML = `
+                    <div class="student-info">
+                        <h3>${student.name}</h3>
+                        <p>${student.email}</p>
+                    </div>
+                    <div class="attendance-toggle">
+                        <button class="toggle-btn present ${status === 'present' ? 'active' : ''}" 
+                                onclick="setAttendance(${student.id}, 'present')">P</button>
+                        <button class="toggle-btn absent ${status === 'absent' ? 'active' : ''}" 
+                                onclick="setAttendance(${student.id}, 'absent')">A</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function setAttendance(studentId, status) {
+            attendanceState[studentId] = status;
+            renderStudents(); // Re-render to update UI
+        }
+
+        function markAll(status) {
+            currentStudents.forEach(s => attendanceState[s.id] = status);
+            renderStudents();
+        }
+
+        async function submitAttendance() {
+            const subjectId = document.getElementById('subjectSelect').value;
+            const date = document.getElementById('dateSelect').value;
+            const period = document.getElementById('periodSelect').value;
+            
+            const records = currentStudents.map(s => ({
+                student_id: s.id,
+                status: attendanceState[s.id]
+            }));
+
+            const payload = {
+                subject_id: subjectId,
+                date: date,
+                period: period,
+                attendance_records: records
+            };
+
+            try {
+                const res = await fetch('/api/faculty/attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    showSuccess('Attendance saved successfully!');
+                } else {
+                    const data = await res.json();
+                    showError(data.error || 'Failed to save attendance');
+                }
+            } catch (err) {
+                showError('Network error while saving');
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/';
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
