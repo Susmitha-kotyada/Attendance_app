@@ -1,2 +1,3 @@
 # Attendance_app
 My first web application 
+My first mini type project...
