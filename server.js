@@ -126,25 +126,28 @@ app.post('/api/faculty/attendance', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Missing or invalid parameters' });
     }
 
-    req.db.serialize(() => {
-        req.db.run("BEGIN TRANSACTION");
-        
-        const stmt = req.db.prepare(`
-            INSERT INTO attendance (date, period, subject_id, student_id, status, faculty_id) 
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(date, period, subject_id, student_id) 
-            DO UPDATE SET status=excluded.status
-        `);
+    req.db.get("SELECT id FROM attendance WHERE date = ? AND period = ? AND subject_id = ? LIMIT 1", [date, period, subject_id], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        if (row) return res.status(400).json({ error: 'Attendance for this session is already submitted and locked.' });
 
-        for (const record of attendance_records) {
-            stmt.run([date, period, subject_id, record.student_id, record.status, req.user.id]);
-        }
-        
-        stmt.finalize();
-        
-        req.db.run("COMMIT", (err) => {
-            if (err) return res.status(500).json({ error: 'Failed to commit attendance' });
-            res.json({ message: 'Attendance saved successfully' });
+        req.db.serialize(() => {
+            req.db.run("BEGIN TRANSACTION");
+            
+            const stmt = req.db.prepare(`
+                INSERT INTO attendance (date, period, subject_id, student_id, status, faculty_id) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            `);
+
+            for (const record of attendance_records) {
+                stmt.run([date, period, subject_id, record.student_id, record.status, req.user.id]);
+            }
+            
+            stmt.finalize();
+            
+            req.db.run("COMMIT", (err) => {
+                if (err) return res.status(500).json({ error: 'Failed to commit attendance' });
+                res.json({ message: 'Attendance saved successfully' });
+            });
         });
     });
 });
@@ -193,6 +196,75 @@ app.get('/api/student/attendance', authenticateToken, (req, res) => {
                 classesPresent,
                 percentage
             }
+        });
+    });
+});
+
+// 4. Admin APIs
+app.post('/api/admin/users', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+    
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password || !role) return res.status(400).json({ error: 'Missing parameters' });
+    
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        req.db.run(
+            "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+            [name, email, hashedPassword, role],
+            function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Email already exists' });
+                    return res.status(500).json({ error: 'Database error' });
+                }
+                res.json({ message: `${role} added successfully`, id: this.lastID });
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/admin/subjects', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+    
+    const { name, faculty_id } = req.body;
+    if (!name || !faculty_id) return res.status(400).json({ error: 'Missing parameters' });
+    
+    req.db.run("INSERT INTO subjects (name, faculty_id) VALUES (?, ?)", [name, faculty_id], function(err) {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json({ message: 'Subject created successfully', id: this.lastID });
+    });
+});
+
+app.post('/api/admin/enroll', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+    
+    const { student_id, subject_id } = req.body;
+    if (!student_id || !subject_id) return res.status(400).json({ error: 'Missing parameters' });
+    
+    req.db.run("INSERT INTO enrollments (student_id, subject_id) VALUES (?, ?)", [student_id, subject_id], function(err) {
+        if (err) {
+            if (err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Student already enrolled' });
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json({ message: 'Student enrolled successfully' });
+    });
+});
+
+app.get('/api/admin/data', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+    
+    let result = { students: [], faculty: [], subjects: [] };
+    
+    req.db.all("SELECT id, name, email FROM users WHERE role = 'student'", (err, students) => {
+        result.students = students || [];
+        req.db.all("SELECT id, name, email FROM users WHERE role = 'faculty'", (err, faculty) => {
+            result.faculty = faculty || [];
+            req.db.all("SELECT s.id, s.name, u.name as faculty_name FROM subjects s JOIN users u ON s.faculty_id = u.id", (err, subjects) => {
+                result.subjects = subjects || [];
+                res.json(result);
+            });
         });
     });
 });

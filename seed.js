@@ -8,9 +8,11 @@ const db = new sqlite3.Database(dbPath);
 async function seed() {
     console.log("Starting database rebuild with real data...");
     const saltRounds = 10;
-    
-    // We will use a generic password 'password123' for all accounts for testing
-    const defaultPassword = await bcrypt.hash('password123', saltRounds);
+
+    // We will use separate passwords for faculty, students, and admin
+    const adminPassword = await bcrypt.hash('admin123', saltRounds);
+    const facultyPassword = await bcrypt.hash('faculty123', saltRounds);
+    const studentPassword = await bcrypt.hash('student123', saltRounds);
 
     db.serialize(() => {
         // Clear existing data (optional, but good for a fresh start)
@@ -18,37 +20,42 @@ async function seed() {
         db.run('DELETE FROM enrollments');
         db.run('DELETE FROM subjects');
         db.run('DELETE FROM users');
-        
+
         // Reset auto-increments
         db.run("DELETE FROM sqlite_sequence WHERE name IN ('attendance', 'enrollments', 'subjects', 'users')");
 
-        // 1. Insert Faculty
+        // 1. Insert Users (Admin, Faculty, Students)
         const stmtUser = db.prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
         
-        // Faculty (IDs 1-4)
-        stmtUser.run("Mrs. Blessy", "wt@gmail.com", defaultPassword, "faculty");
-        stmtUser.run("Mr. Ramakrishna", "cd@gmail.com", defaultPassword, "faculty");
-        stmtUser.run("Mrs. Jyothi", "coa@gmail.com", defaultPassword, "faculty");
-        stmtUser.run("Mr. Lakshmikanth", "dsp@gmail.com", defaultPassword, "faculty");
+        // Admin (ID 1)
+        stmtUser.run("Admin User", "admin@gmail.com", adminPassword, "admin");
 
-        // Students (IDs 5-7)
-        stmtUser.run("B Lavanya", "lavanya@gmail.com", defaultPassword, "student");
-        stmtUser.run("K Vaishika", "vaishika@gmail.com", defaultPassword, "student");
-        stmtUser.run("K Susmitha", "susmitha@gmail.com", defaultPassword, "student");
+        // Faculty (IDs 2-5)
+        stmtUser.run("Mrs. Blessy", "wt@gmail.com", facultyPassword, "faculty");
+        stmtUser.run("Mr. Ramakrishna", "cd@gmail.com", facultyPassword, "faculty");
+        stmtUser.run("Mrs. Jyothi", "coa@gmail.com", facultyPassword, "faculty");
+        stmtUser.run("Mr. Lakshmikanth", "dsp@gmail.com", facultyPassword, "faculty");
+
+        // Students (IDs 6-9)
+        stmtUser.run("B Lavanya", "lavanya@gmail.com", studentPassword, "student");
+        stmtUser.run("K Vaishika", "vaishika@gmail.com", studentPassword, "student");
+        stmtUser.run("K Susmitha", "susmitha@gmail.com", studentPassword, "student");
+        stmtUser.run("Anu", "anu@gmail.com", studentPassword, "student");
         
         stmtUser.finalize();
 
-        // 2. Insert Subjects (Faculty IDs match insertion order: 1=Blessy, 2=Rama, 3=Jyothi, 4=Lakshmi)
+        // 2. Insert Subjects (Faculty IDs match insertion order: 2=Blessy, 3=Rama, 4=Jyothi, 5=Lakshmi)
         const stmtSubject = db.prepare("INSERT INTO subjects (name, faculty_id) VALUES (?, ?)");
-        stmtSubject.run("WT", 1);
-        stmtSubject.run("CD", 2);
-        stmtSubject.run("COA", 3);
-        stmtSubject.run("DSP", 4);
+        stmtSubject.run("WT", 2);
+        stmtSubject.run("DAA", 2);
+        stmtSubject.run("CD", 3);
+        stmtSubject.run("COA", 4);
+        stmtSubject.run("DSP", 5);
         stmtSubject.finalize();
 
         // 3. Insert Enrollments (All students enrolled in all subjects)
         const stmtEnrollment = db.prepare("INSERT INTO enrollments (student_id, subject_id) VALUES (?, ?)");
-        const studentIds = [5, 6, 7];
+        const studentIds = [6, 7, 8, 9];
         const subjectIds = [1, 2, 3, 4];
 
         for (const studentId of studentIds) {

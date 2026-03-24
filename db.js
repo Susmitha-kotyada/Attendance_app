@@ -17,7 +17,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 name TEXT NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
-                role TEXT NOT NULL CHECK(role IN ('faculty', 'student'))
+                role TEXT NOT NULL CHECK(role IN ('admin', 'faculty', 'student'))
             )`);
 
             // Subjects table

@@ -206,6 +206,11 @@
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
         }
 
+        .toggle-btn:disabled, .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         /* Action Buttons */
         .actions {
             margin-top: 2rem;
@@ -300,9 +305,9 @@
             </div>
 
             <div class="students-header">
-                <h2>Student Roster</h2>
+                <h2 id="rosterTitle">Student Roster</h2>
                 <div>
-                    <button class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="markAll('present')">Mark All Present</button>
+                    <button id="markAllBtn" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="markAll('present')">Mark All Present</button>
                 </div>
             </div>
 
@@ -334,6 +339,7 @@
         // State
         let currentStudents = [];
         let attendanceState = {}; // student_id -> 'present' | 'absent'
+        let isLocked = false;
 
         // Initialize
         async function init() {
@@ -400,16 +406,29 @@
                 });
                 const existing = await res.json();
                 
+                const submitBtn = document.getElementById('submitBtn');
+                const markAllBtn = document.getElementById('markAllBtn');
+                const rosterTitle = document.getElementById('rosterTitle');
+
                 if (existing && existing.length > 0) {
                     // Update state with existing records
                     existing.forEach(record => {
                         attendanceState[record.student_id] = record.status;
                     });
-                    showSuccess('Loaded existing attendance for this date/period');
+                    showSuccess('Attendance for this session is already submitted and locked.');
+                    isLocked = true;
+                    submitBtn.style.display = 'none';
+                    markAllBtn.style.display = 'none';
+                    rosterTitle.innerHTML = 'Student Roster <span style="color:var(--error);font-size:0.9rem;margin-left:10px;">(Locked)</span>';
                 } else {
                     // Reset to present if no existing record
                     currentStudents.forEach(s => attendanceState[s.id] = 'present');
                     document.getElementById('successMsg').style.display = 'none';
+                    isLocked = false;
+                    submitBtn.style.display = 'block';
+                    markAllBtn.style.display = 'inline-block';
+                    submitBtn.textContent = 'Save Attendance';
+                    rosterTitle.textContent = 'Student Roster';
                 }
                 renderStudents();
             } catch (err) {
@@ -437,9 +456,9 @@
                     </div>
                     <div class="attendance-toggle">
                         <button class="toggle-btn present ${status === 'present' ? 'active' : ''}" 
-                                onclick="setAttendance(${student.id}, 'present')">P</button>
+                                onclick="setAttendance(${student.id}, 'present')" ${isLocked ? 'disabled' : ''}>P</button>
                         <button class="toggle-btn absent ${status === 'absent' ? 'active' : ''}" 
-                                onclick="setAttendance(${student.id}, 'absent')">A</button>
+                                onclick="setAttendance(${student.id}, 'absent')" ${isLocked ? 'disabled' : ''}>A</button>
                     </div>
                 `;
                 container.appendChild(div);

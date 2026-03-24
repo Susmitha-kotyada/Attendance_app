@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        nav {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-brand { font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        button {
+            background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem;
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .logout-btn { background: rgba(255,255,255,0.1); }
+        .logout-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+        
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+
+        .glass-panel {
+            background: var(--glass-bg); backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .glass-panel h2 { margin-top: 0; margin-bottom: 1.5rem; font-size: 1.25rem; }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        .form-control {
+            width: 100%; padding: 0.75rem; background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border); border-radius: 8px; color: white;
+            font-family: 'Inter', sans-serif; box-sizing: border-box;
+        }
+        .form-control:focus { outline: none; border-color: var(--primary); }
+
+        .msg { padding: 1rem; border-radius: 8px; margin-top: 1rem; display: none; }
+        .success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .error { background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--glass-border); }
+        th { color: var(--text-muted); font-weight: 500; }
+        
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-brand">Admin Dashboard</div>
+        <div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div class="grid-layout">
+            <!-- Add User Form -->
+            <div class="glass-panel">
+                <h2>Add New User (Faculty/Student)</h2>
+                <form id="addUserForm" onsubmit="addUser(event)">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="userName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="userEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="userPassword" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="userRole" class="form-control">
+                            <option value="student">Student</option>
+                            <option value="faculty">Faculty</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" style="width: 100%">Create User</button>
+                    <div id="userMsg" class="msg"></div>
+                </form>
+            </div>
+
+            <!-- Add Subject Form -->
+            <div class="glass-panel">
+                <h2>Add New Subject</h2>
+                <form id="addSubjectForm" onsubmit="addSubject(event)">
+                    <div class="form-group">
+                        <label>Subject Name</label>
+                        <input type="text" id="subjectName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Assign to Faculty</label>
+                        <select id="subjectFaculty" class="form-control" required>
+                            <option value="">Loading faculty...</option>
+                        </select>
+                    </div>
+                    <button type="submit" style="width: 100%">Create Subject</button>
+                    <div id="subjectMsg" class="msg"></div>
+                </form>
+
+                <hr style="border:0; border-top:1px solid var(--glass-border); margin: 2rem 0;">
+
+                <h2>Enroll Student in Subject</h2>
+                <form id="enrollForm" onsubmit="enrollStudent(event)">
+                    <div class="form-group">
+                        <label>Student</label>
+                        <select id="enrollStudent" class="form-control" required>
+                            <option value="">Loading students...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <select id="enrollSubject" class="form-control" required>
+                            <option value="">Loading subjects...</option>
+                        </select>
+                    </div>
+                    <button type="submit" style="width: 100%">Enroll Student</button>
+                    <div id="enrollMsg" class="msg"></div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let token = localStorage.getItem('token');
+        let user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user || user.role !== 'admin') {
+            window.location.href = '/';
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch(`${API_URL}/admin/data`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // Populate faculty select
+                    const facultySelect = document.getElementById('subjectFaculty');
+                    facultySelect.innerHTML = data.faculty.map(f => `<option value="${f.id}">${f.name} (${f.email})</option>`).join('');
+                    
+                    // Populate student select
+                    const studentSelect = document.getElementById('enrollStudent');
+                    studentSelect.innerHTML = data.students.map(s => `<option value="${s.id}">${s.name} (${s.email})</option>`).join('');
+                    
+                    // Populate subject select
+                    const subjectSelect = document.getElementById('enrollSubject');
+                    subjectSelect.innerHTML = data.subjects.map(s => `<option value="${s.id}">${s.name} (${s.faculty_name})</option>`).join('');
+                } else if(res.status === 401 || res.status === 403) {
+                    logout();
+                }
+            } catch (err) {
+                console.error("Failed to load admin data");
+            }
+        }
+
+        function showMsg(elementId, text, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = text;
+            el.className = `msg ${type}`;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        async function addUser(e) {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('userName').value,
+                email: document.getElementById('userEmail').value,
+                password: document.getElementById('userPassword').value,
+                role: document.getElementById('userRole').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/admin/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showMsg('userMsg', data.message, 'success');
+                    e.target.reset();
+                    loadData(); // refresh lists
+                } else {
+                    showMsg('userMsg', data.error || 'Failed to add user', 'error');
+                }
+            } catch(err) {
+                showMsg('userMsg', 'Network error', 'error');
+            }
+        }
+
+        async function addSubject(e) {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('subjectName').value,
+                faculty_id: document.getElementById('subjectFaculty').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/admin/subjects`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showMsg('subjectMsg', data.message, 'success');
+                    e.target.reset();
+                    loadData();
+                } else {
+                    showMsg('subjectMsg', data.error || 'Failed to add subject', 'error');
+                }
+            } catch(err) {
+                showMsg('subjectMsg', 'Network error', 'error');
+            }
+        }
+
+        async function enrollStudent(e) {
+            e.preventDefault();
+            const payload = {
+                student_id: document.getElementById('enrollStudent').value,
+                subject_id: document.getElementById('enrollSubject').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/admin/enroll`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showMsg('enrollMsg', data.message, 'success');
+                } else {
+                    showMsg('enrollMsg', data.error || 'Failed to enroll', 'error');
+                }
+            } catch(err) {
+                showMsg('enrollMsg', 'Network error', 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
